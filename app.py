@@ -1,15 +1,32 @@
-from TTS.api import TTS
-tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=False)
 
-tts.tts_to_file(text="It took me quite a long time to develop a voice, and now that I have it I'm not going to be silent.",
-                file_path="output.wav",
-                speaker_wav="C:/Users/user/Proj/corque/techno.wav",
-                language="en")
+# from kokoro import KPipeline
+# from IPython.display import display, Audio
+# import soundfile as sf
+# import torch
+# pipeline = KPipeline(lang_code='h')
+# text = '''
+# hi how are you hope you are fine.
+# '''
+# generator = pipeline(text, voice='af_heart')
+# for i, (gs, ps, audio) in enumerate(generator):
+#     print(i, gs, ps)
+#     display(Audio(data=audio, rate=24000, autoplay=i==0))
+#     sf.write(f'english.wav', audio, 24000)
 
 
 
 
-tts.tts_to_file(text="मुझे अपनी आवाज विकसित करने में काफी समय लगा, और अब जब यह मेरे पास है तो मैं चुप नहीं रहूंगी।",
-                file_path="output.wav",
-                speaker_wav="C:/Users/user/Proj/corque/techno.wav",
-                language="hi")
+from kokoro import KPipeline
+from IPython.display import display, Audio
+import soundfile as sf
+import torch
+pipeline = KPipeline(lang_code='h')
+text = '''
+हाय आप कैसे हैं आशा है आप ठीक होंगे।
+
+'''
+generator = pipeline(text, voice='af_heart')
+for i, (gs, ps, audio) in enumerate(generator):
+    print(i, gs, ps)
+    display(Audio(data=audio, rate=24000, autoplay=i==0))
+    sf.write(f'hindi.wav', audio, 24000)
