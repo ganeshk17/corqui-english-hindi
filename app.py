@@ -1,43 +1,27 @@
+
 import torch
-import time
-from parler_tts import ParlerTTSForConditionalGeneration
-from transformers import AutoTokenizer
-import soundfile as sf
+import scipy
+import numpy as np
+from transformers import VitsModel, AutoTokenizer
 
-# Choose your device (GPU or CPU)
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+# Load the model and tokenizer
+model = VitsModel.from_pretrained(r"C:\Users\user\Proj\fem-hin")
+tokenizer = AutoTokenizer.from_pretrained(r"C:\Users\user\Proj\fem-hin")
 
-# Load the model and tokenizers
-model = ParlerTTSForConditionalGeneration.from_pretrained(
-    r"C:\Users\user\Proj\helpingAI\helpingai"
-).to(device)
-tokenizer = AutoTokenizer.from_pretrained(
-    r"C:\Users\user\Proj\helpingAI\helpingai"
-)
-description_tokenizer = AutoTokenizer.from_pretrained(
-    model.config.text_encoder._name_or_path
-)
+# Input text
+text = "यूसीआई एक तात्कालिक भुगतान प्रणाली है जिसे नेशनल पेमेंट्स कॉर्पोरेशन ऑफ इंडिया (एनपीसीआई) द्वारा विकसित किया गया है, जो एक आरबीआई"
+inputs = tokenizer(text, return_tensors="pt")
 
-# Customize your inputs: text + description
-prompt = "अरे, काय चाललंय? कसं चाललंय? आशा आहे की तू मस्त असशील!"
-description = "A friendly, upbeat, and casual tone with a moderate speed. Speaker sounds confident and relaxed."
+# Generate the waveform
+with torch.no_grad():
+    output = model(**inputs).waveform
 
-# Tokenize the inputs
-input_ids = description_tokenizer(description, return_tensors="pt").input_ids.to(device)
-prompt_input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
+# Convert to numpy and scale to int16 format
+audio_data = output.squeeze().cpu().numpy()  # Ensure it's a 1D array
+audio_data = (audio_data * 32767).clip(-32768, 32767).astype(np.int16)  # Scale and convert to int16
 
-# Start timing
-start_time = time.time()
+# Save to WAV file
+scipy.io.wavfile.write("techno.wav", rate=model.config.sampling_rate, data=audio_data)
 
-# Generate the audio
-generation = model.generate(input_ids=input_ids, prompt_input_ids=prompt_input_ids)
-audio_arr = generation.cpu().numpy().squeeze()
+print("WAV file saved successfully.")
 
-# Stop timing
-end_time = time.time()
-processing_time = end_time - start_time
-print(f"Processing time: {processing_time:.2f} seconds")
-
-# Save the audio to a file
-sf.write("marathi.wav", audio_arr, model.config.sampling_rate)
-print("Audio saved as output.wav")
