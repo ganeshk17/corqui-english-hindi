@@ -1,0 +1,925 @@
+# import socket
+# import struct
+# import sounddevice as sd
+# import numpy as np
+# import json
+# import queue
+# import threading
+# import time
+
+# # ===== Config =====
+# SERVER_IP = "172.21.11.61"
+# SERVER_PORT = 12346
+# REQUEST = {
+#     "text": "यूसीआई एक तात्कालिक भुगतान प्रणाली है जिसे नेशनल पेमेंट्स कॉर्पोरेशन ऑफ इंडिया द्वारा विकसित किया गया है, जो एक आरबीआई पहल है।",
+#     "chunk_size": 6
+# }
+
+# audio_queue = queue.Queue()
+# stop_flag = False
+# samplerate = None
+
+# # ===== Receive exact bytes =====
+# def recv_exact(sock, nbytes):
+#     data = bytearray()
+#     while len(data) < nbytes:
+#         chunk = sock.recv(nbytes - len(data))
+#         if not chunk:
+#             raise ConnectionError("Socket closed")
+#         data.extend(chunk)
+#     return bytes(data)
+
+# # ===== Playback thread =====
+# def playback_worker():
+#     global stop_flag
+#     while not stop_flag or not audio_queue.empty():
+#         try:
+#             audio_data = audio_queue.get(timeout=0.1)
+#             sd.play(audio_data, samplerate=samplerate)
+#             sd.wait()
+#         except queue.Empty:
+#             continue
+
+# # ===== Receiver thread =====
+# def receiver(sock):
+#     global samplerate, stop_flag
+#     try:
+#         # Send request
+#         sock.sendall((json.dumps(REQUEST) + "\n").encode("utf-8"))
+
+#         # Receive samplerate
+#         sr_bytes = recv_exact(sock, 4)
+#         samplerate = struct.unpack(">I", sr_bytes)[0]
+#         print(f"🎛 Server samplerate: {samplerate}")
+
+#         chunk_idx = 0
+#         first_chunk = True
+#         start_time = time.time()
+        
+#         while True:
+#             len_bytes = recv_exact(sock, 4)
+#             (length,) = struct.unpack(">I", len_bytes)
+#             if length == 0:
+#                 break
+                
+#             payload = recv_exact(sock, length)
+#             pcm_array = np.frombuffer(payload, dtype=np.int16).astype(np.float32) / 32767.0
+#             audio_queue.put(pcm_array)
+
+#             chunk_idx += 1
+#             if first_chunk:
+#                 first_chunk = False
+#                 latency = time.time() - start_time
+#                 print(f"⏱ Time until first audio received: {latency:.2f} seconds")
+            
+#             print(f"⬇️  Received chunk {chunk_idx} ({length} bytes)")
+
+#     except Exception as e:
+#         print(f"❌ Receiver error: {e}")
+#     finally:
+#         stop_flag = True
+
+# # ===== Main =====
+# def main():
+#     global samplerate
+#     print(f"🔌 Connecting to {SERVER_IP}:{SERVER_PORT} ...")
+#     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     sock.connect((SERVER_IP, SERVER_PORT))
+#     print("✅ Connected.")
+
+#     # Start receiver thread
+#     recv_thread = threading.Thread(target=receiver, args=(sock,))
+#     recv_thread.start()
+
+#     # Wait until we have samplerate
+#     while samplerate is None:
+#         time.sleep(0.01)
+
+#     # Start playback thread
+#     play_thread = threading.Thread(target=playback_worker)
+#     play_thread.start()
+
+#     # Wait for completion
+#     recv_thread.join()
+#     play_thread.join()
+    
+#     sock.close()
+#     print("🏁 Streaming playback finished.")
+
+# if __name__ == "__main__":
+#     main()
+
+
+
+
+######################################################################################
+
+
+
+
+# import socket
+# import struct
+# import sounddevice as sd
+# import numpy as np
+# import json
+# import queue
+# import threading
+# import time
+
+# # ===== Config =====
+# SERVER_IP = "172.21.11.61"
+# SERVER_PORT = 12346
+# REQUEST = {
+#     "text": "यूसीआई एक तात्कालिक भुगतान प्रणाली है जिसे नेशनल पेमेंट्स कॉर्पोरेशन ऑफ इंडिया द्वारा विकसित किया गया है, जो एक आरबीआई पहल है।",
+#     "chunk_size": 6
+# }
+
+# audio_queue = queue.Queue()
+# stop_flag = False
+# samplerate = None
+
+# # ===== Receive exact bytes =====
+# def recv_exact(sock, nbytes):
+#     data = bytearray()
+#     while len(data) < nbytes:
+#         chunk = sock.recv(nbytes - len(data))
+#         if not chunk:
+#             raise ConnectionError("Socket closed")
+#         data.extend(chunk)
+#     return bytes(data)
+
+# # ===== Playback thread =====
+# def playback_worker():
+#     global stop_flag
+#     while not stop_flag or not audio_queue.empty():
+#         try:
+#             audio_data = audio_queue.get(timeout=0.1)
+#             sd.play(audio_data, samplerate=samplerate)
+#             sd.wait()
+#         except queue.Empty:
+#             continue
+
+# # ===== Receiver thread =====
+# def receiver(sock):
+#     global samplerate, stop_flag
+#     try:
+#         # Send request
+#         sock.sendall((json.dumps(REQUEST) + "\n").encode("utf-8"))
+
+#         # Receive samplerate
+#         sr_bytes = recv_exact(sock, 4)
+#         samplerate = struct.unpack(">I", sr_bytes)[0]
+#         print(f"🎛 Server samplerate: {samplerate}")
+
+#         chunk_idx = 0
+#         first_chunk = True
+#         start_time = time.time()
+        
+#         while True:
+#             len_bytes = recv_exact(sock, 4)
+#             (length,) = struct.unpack(">I", len_bytes)
+#             if length == 0:
+#                 break
+                
+#             payload = recv_exact(sock, length)
+#             pcm_array = np.frombuffer(payload, dtype=np.int16).astype(np.float32) / 32767.0
+#             audio_queue.put(pcm_array)
+
+#             chunk_idx += 1
+#             if first_chunk:
+#                 first_chunk = False
+#                 latency = time.time() - start_time
+#                 print(f"⏱ Time until first audio received: {latency:.2f} seconds")
+            
+#             print(f"⬇️  Received chunk {chunk_idx} ({length} bytes)")
+
+#     except Exception as e:
+#         print(f"❌ Receiver error: {e}")
+#     finally:
+#         stop_flag = True
+
+# # ===== Main =====
+# def main():
+#     global samplerate
+#     print(f"🔌 Connecting to {SERVER_IP}:{SERVER_PORT} ...")
+#     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     sock.connect((SERVER_IP, SERVER_PORT))
+#     print("✅ Connected.")
+
+#     # Start receiver thread
+#     recv_thread = threading.Thread(target=receiver, args=(sock,))
+#     recv_thread.start()
+
+#     # Wait until we have samplerate
+#     while samplerate is None:
+#         time.sleep(0.01)
+
+#     # Start playback thread
+#     play_thread = threading.Thread(target=playback_worker)
+#     play_thread.start()
+
+#     # Wait for completion
+#     recv_thread.join()
+#     play_thread.join()
+    
+#     sock.close()
+#     print("🏁 Streaming playback finished.")
+
+# if __name__ == "__main__":
+#     main()
+
+
+
+
+############################################################################
+
+
+
+
+
+
+# import socket
+# import struct
+# import sounddevice as sd
+# import numpy as np
+# import json
+# import queue
+# import threading
+# import time
+
+# # ===== Config =====
+# SERVER_IP = "172.21.11.61"
+# SERVER_PORT = 12346
+# REQUEST = {
+#     "text": "यूसीआई एक तात्कालिक भुगतान प्रणाली है जिसे नेशनल पेमेंट्स कॉर्पोरेशन ऑफ इंडिया द्वारा विकसित किया गया है, जो एक आरबीआई पहल है।",
+#     "chunk_size": 4  # Smaller chunks for lower latency
+# }
+
+# audio_queue = queue.Queue(maxsize=10)  # Limit queue size to prevent memory issues
+# stop_flag = False
+# samplerate = None
+
+# # ===== Receive exact bytes with timeout =====
+# def recv_exact(sock, nbytes, timeout=30):
+#     sock.settimeout(timeout)
+#     data = bytearray()
+#     while len(data) < nbytes:
+#         try:
+#             chunk = sock.recv(min(nbytes - len(data), 4096))
+#             if not chunk:
+#                 raise ConnectionError("Socket closed")
+#             data.extend(chunk)
+#         except socket.timeout:
+#             raise ConnectionError("Receive timeout")
+#     sock.settimeout(None)
+#     return bytes(data)
+
+# # ===== Playback thread with better audio handling =====
+# def playback_worker():
+#     global stop_flag
+#     try:
+#         while not stop_flag or not audio_queue.empty():
+#             try:
+#                 audio_data = audio_queue.get(timeout=0.1)
+#                 # Use lower latency settings
+#                 sd.play(audio_data, samplerate=samplerate, blocking=True)
+#             except queue.Empty:
+#                 continue
+#             except Exception as e:
+#                 print(f"❌ Playback error: {e}")
+#                 break
+#     except Exception as e:
+#         print(f"❌ Playback worker error: {e}")
+
+# # ===== Receiver thread with better error handling =====
+# def receiver(sock):
+#     global samplerate, stop_flag
+#     try:
+#         # Send request
+#         request_data = (json.dumps(REQUEST) + "\n").encode("utf-8")
+#         sock.sendall(request_data)
+
+#         # Receive samplerate
+#         sr_bytes = recv_exact(sock, 4, timeout=10)
+#         samplerate = struct.unpack(">I", sr_bytes)[0]
+#         print(f"🎛 Server samplerate: {samplerate}")
+
+#         chunk_idx = 0
+#         first_chunk = True
+#         start_time = time.time()
+#         total_audio_duration = 0
+        
+#         while True:
+#             len_bytes = recv_exact(sock, 4)
+#             (length,) = struct.unpack(">I", len_bytes)
+#             if length == 0:
+#                 print("📡 End of stream signal received")
+#                 break
+                
+#             payload = recv_exact(sock, length)
+#             pcm_array = np.frombuffer(payload, dtype=np.int16).astype(np.float32) / 32767.0
+            
+#             # Calculate audio duration
+#             audio_duration = len(pcm_array) / samplerate
+#             total_audio_duration += audio_duration
+            
+#             # Block if queue is full (backpressure)
+#             audio_queue.put(pcm_array, timeout=5.0)
+
+#             chunk_idx += 1
+#             if first_chunk:
+#                 first_chunk = False
+#                 latency = time.time() - start_time
+#                 print(f"⏱ Time to first audio: {latency:.2f}s")
+            
+#             # print(f"⬇️ Chunk {chunk_idx}: {length} bytes, {audio_duration:.2f}s audio")
+
+#         print(f"📊 Total audio duration: {total_audio_duration:.2f}s")
+
+#     except Exception as e:
+#         print(f"❌ Receiver error: {e}")
+#     finally:
+#         stop_flag = True
+
+# # ===== Main with better connection handling =====
+# def main():
+#     global samplerate, stop_flag
+    
+#     print(f"🔌 Connecting to {SERVER_IP}:{SERVER_PORT} ...")
+    
+#     try:
+#         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # Disable Nagle's algorithm
+#         sock.connect((SERVER_IP, SERVER_PORT))
+#         print("✅ Connected.")
+
+#         # Start receiver thread
+#         recv_thread = threading.Thread(target=receiver, args=(sock,), daemon=True)
+#         recv_thread.start()
+
+#         # Wait until we have samplerate
+#         while samplerate is None and not stop_flag:
+#             time.sleep(0.01)
+
+#         if stop_flag:
+#             print("❌ Failed to get samplerate")
+#             return
+
+#         # Start playback thread
+#         play_thread = threading.Thread(target=playback_worker, daemon=True)
+#         play_thread.start()
+
+#         # Wait for receiver to finish
+#         recv_thread.join()
+        
+#         # Give playback time to finish remaining audio
+#         while not audio_queue.empty():
+#             time.sleep(0.1)
+        
+#         stop_flag = True
+#         play_thread.join(timeout=2.0)
+        
+#         print("🏁 Streaming finished.")
+        
+#     except Exception as e:
+#         print(f"❌ Connection error: {e}")
+#     finally:
+#         try:
+#             sock.close()
+#         except:
+#             pass
+
+# if __name__ == "__main__":
+#     main()
+    
+
+
+
+
+
+
+
+##########################################  tcp socket - with said changes  ######################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# import socket
+# import struct
+# import sounddevice as sd
+# import numpy as np
+# import json
+# import queue
+# import threading
+# import time
+
+# # ===== Config =====
+# SERVER_IP = "172.21.11.61"
+# SERVER_PORT = 12346
+# REQUEST = {
+#     "text": "यूसीआई एक तात्कालिक भुगतान प्रणाली है जिसे नेशनल पेमेंट्स कॉर्पोरेशन ऑफ इंडिया द्वारा विकसित किया गया है, जो एक आरबीआई पहल है।",
+#     "chunk_size": 4  # Smaller chunks for lower latency
+# }
+
+# audio_queue = queue.Queue(maxsize=10)  # Limit queue size to prevent memory issues
+# stop_flag = False
+# samplerate = None  # Will be set to 8000 Hz from server
+
+# # ===== Receive exact bytes with timeout =====
+# def recv_exact(sock, nbytes, timeout=30):
+#     sock.settimeout(timeout)
+#     data = bytearray()
+#     while len(data) < nbytes:
+#         try:
+#             chunk = sock.recv(min(nbytes - len(data), 4096))
+#             if not chunk:
+#                 raise ConnectionError("Socket closed")
+#             data.extend(chunk)
+#         except socket.timeout:
+#             raise ConnectionError("Receive timeout")
+#     sock.settimeout(None)
+#     return bytes(data)
+
+# # ===== Playback thread with better audio handling =====
+# def playback_worker():
+#     global stop_flag
+#     try:
+#         while not stop_flag or not audio_queue.empty():
+#             try:
+#                 audio_data = audio_queue.get(timeout=0.1)
+#                 # Use lower latency settings for 8kHz audio
+#                 sd.play(audio_data, samplerate=samplerate, blocking=True)
+#             except queue.Empty:
+#                 continue
+#             except Exception as e:
+#                 print(f"❌ Playback error: {e}")
+#                 break
+#     except Exception as e:
+#         print(f"❌ Playback worker error: {e}")
+
+# # ===== Receiver thread with better error handling =====
+# def receiver(sock):
+#     global samplerate, stop_flag
+#     try:
+#         # Send request
+#         request_data = (json.dumps(REQUEST) + "\n").encode("utf-8")
+#         sock.sendall(request_data)
+
+#         # Receive samplerate (should be 8000 Hz from server)
+#         sr_bytes = recv_exact(sock, 4, timeout=10)
+#         samplerate = struct.unpack(">I", sr_bytes)[0]
+#         print(f"🎛 Server samplerate: {samplerate} Hz (resampled)")
+
+#         chunk_idx = 0
+#         first_chunk = True
+#         start_time = time.time()
+#         total_audio_duration = 0
+        
+#         while True:
+#             len_bytes = recv_exact(sock, 4)
+#             (length,) = struct.unpack(">I", len_bytes)
+#             if length == 0:
+#                 print("📡 End of stream signal received")
+#                 break
+                
+#             payload = recv_exact(sock, length)
+#             # Audio is already processed as int16 from server, convert to float32 for playback
+#             pcm_array = np.frombuffer(payload, dtype=np.int16).astype(np.float32) / 32767.0
+            
+#             # Calculate audio duration
+#             audio_duration = len(pcm_array) / samplerate
+#             total_audio_duration += audio_duration
+            
+#             # Block if queue is full (backpressure)
+#             audio_queue.put(pcm_array, timeout=5.0)
+
+#             chunk_idx += 1
+#             if first_chunk:
+#                 first_chunk = False
+#                 latency = time.time() - start_time
+#                 print(f"⏱ Time to first audio: {latency:.2f}s")
+            
+#             print(f"⬇️ Chunk {chunk_idx}: {length} bytes, {audio_duration:.2f}s audio (8kHz)")
+
+#         print(f"📊 Total audio duration: {total_audio_duration:.2f}s")
+
+#     except Exception as e:
+#         print(f"❌ Receiver error: {e}")
+#     finally:
+#         stop_flag = True
+
+# # ===== Main with better connection handling =====
+# def main():
+#     global samplerate, stop_flag
+    
+#     print(f"🔌 Connecting to {SERVER_IP}:{SERVER_PORT} ...")
+    
+#     try:
+#         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # Disable Nagle's algorithm
+#         sock.connect((SERVER_IP, SERVER_PORT))
+#         print("✅ Connected.")
+
+#         # Start receiver thread
+#         recv_thread = threading.Thread(target=receiver, args=(sock,), daemon=True)
+#         recv_thread.start()
+
+#         # Wait until we have samplerate
+#         while samplerate is None and not stop_flag:
+#             time.sleep(0.01)
+
+#         if stop_flag:
+#             print("❌ Failed to get samplerate")
+#             return
+
+#         print(f"🎵 Starting playback at {samplerate} Hz")
+
+#         # Start playback thread
+#         play_thread = threading.Thread(target=playback_worker, daemon=True)
+#         play_thread.start()
+
+#         # Wait for receiver to finish
+#         recv_thread.join()
+        
+#         # Give playback time to finish remaining audio
+#         while not audio_queue.empty():
+#             time.sleep(0.1)
+        
+#         stop_flag = True
+#         play_thread.join(timeout=2.0)
+        
+#         print("🏁 Streaming finished.")
+        
+#     except Exception as e:
+#         print(f"❌ Connection error: {e}")
+#     finally:
+#         try:
+#             sock.close()
+#         except:
+#             pass
+
+# if __name__ == "__main__":
+#     main()
+
+
+
+
+
+##########################################  web socket - with said changes  ######################################################
+
+
+
+
+# import socket
+# import struct
+# import sounddevice as sd
+# import numpy as np
+# import json
+# import queue
+# import threading
+# import time
+
+# # ===== Config =====
+# SERVER_IP = "172.21.11.61"
+# SERVER_PORT = 12346
+# REQUEST = {
+#     "text": "यूसीआई एक तात्कालिक भुगतान प्रणाली है जिसे नेशनल पेमेंट्स कॉर्पोरेशन ऑफ इंडिया द्वारा विकसित किया गया है, जो एक आरबीआई पहल है।",
+#     "chunk_size": 4  # Smaller chunks for lower latency
+# }
+
+# audio_queue = queue.Queue(maxsize=10)
+# stop_flag = False
+# samplerate = None  # Will be 8000 Hz (WebSocket processed)
+
+# def recv_exact(sock, nbytes, timeout=30):
+#     sock.settimeout(timeout)
+#     data = bytearray()
+#     while len(data) < nbytes:
+#         try:
+#             chunk = sock.recv(min(nbytes - len(data), 4096))
+#             if not chunk:
+#                 raise ConnectionError("Socket closed")
+#             data.extend(chunk)
+#         except socket.timeout:
+#             raise ConnectionError("Receive timeout")
+#     sock.settimeout(None)
+#     return bytes(data)
+
+# def playback_worker():
+#     global stop_flag
+#     try:
+#         while not stop_flag or not audio_queue.empty():
+#             try:
+#                 audio_data = audio_queue.get(timeout=0.1)
+#                 sd.play(audio_data, samplerate=samplerate, blocking=True)
+#             except queue.Empty:
+#                 continue
+#             except Exception as e:
+#                 print(f"❌ Playback error: {e}")
+#                 break
+#     except Exception as e:
+#         print(f"❌ Playback worker error: {e}")
+
+# def receiver(sock):
+#     global samplerate, stop_flag
+#     try:
+#         request_data = (json.dumps(REQUEST) + "\n").encode("utf-8")
+#         sock.sendall(request_data)
+
+#         # Receive samplerate (8000 Hz from WebSocket processing)
+#         sr_bytes = recv_exact(sock, 4, timeout=10)
+#         samplerate = struct.unpack(">I", sr_bytes)[0]
+#         print(f"🎛 Server samplerate: {samplerate} Hz (WebSocket processed)")
+
+#         chunk_idx = 0
+#         first_chunk = True
+#         start_time = time.time()
+#         total_audio_duration = 0
+        
+#         while True:
+#             len_bytes = recv_exact(sock, 4)
+#             (length,) = struct.unpack(">I", len_bytes)
+#             if length == 0:
+#                 print("📡 End of stream signal received")
+#                 break
+                
+#             payload = recv_exact(sock, length)
+#             # Audio is WebSocket processed (resampled to 8kHz, normalized)
+#             pcm_array = np.frombuffer(payload, dtype=np.int16).astype(np.float32) / 32767.0
+            
+#             audio_duration = len(pcm_array) / samplerate
+#             total_audio_duration += audio_duration
+            
+#             audio_queue.put(pcm_array, timeout=5.0)
+
+#             chunk_idx += 1
+#             if first_chunk:
+#                 first_chunk = False
+#                 latency = time.time() - start_time
+#                 print(f"⏱ Time to first audio: {latency:.2f}s")
+            
+#             # print(f"⬇️ Chunk {chunk_idx}: {length} bytes, {audio_duration:.2f}s audio (WebSocket processed)")
+
+#         print(f"📊 Total audio duration: {total_audio_duration:.2f}s")
+
+#     except Exception as e:
+#         print(f"❌ Receiver error: {e}")
+#     finally:
+#         stop_flag = True
+
+# def main():
+#     global samplerate, stop_flag
+    
+#     print(f"🔌 Connecting to TCP server (WebSocket processing): {SERVER_IP}:{SERVER_PORT}")
+    
+#     try:
+#         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+#         sock.connect((SERVER_IP, SERVER_PORT))
+#         print("✅ Connected.")
+
+#         recv_thread = threading.Thread(target=receiver, args=(sock,), daemon=True)
+#         recv_thread.start()
+
+#         while samplerate is None and not stop_flag:
+#             time.sleep(0.01)
+
+#         if stop_flag:
+#             print("❌ Failed to get samplerate")
+#             return
+
+#         print(f"🎵 Starting playback at {samplerate} Hz (WebSocket processed)")
+
+#         play_thread = threading.Thread(target=playback_worker, daemon=True)
+#         play_thread.start()
+
+#         recv_thread.join()
+        
+#         while not audio_queue.empty():
+#             time.sleep(0.1)
+        
+#         stop_flag = True
+#         play_thread.join(timeout=2.0)
+        
+#         print("🏁 Streaming finished.")
+        
+#     except Exception as e:
+#         print(f"❌ Connection error: {e}")
+#     finally:
+#         try:
+#             sock.close()
+#         except:
+#             pass
+
+# if __name__ == "__main__":
+#     main()
+
+
+
+
+
+    
+
+
+#########################################################################
+
+
+
+
+
+import asyncio
+import websockets
+import sounddevice as sd
+import numpy as np
+import json
+import queue
+import threading
+import time
+import base64
+
+# ===== Config =====
+SERVER_IP = "172.21.11.61"
+SERVER_PORT = 8080
+REQUEST = {
+    "text": "यूसीआई एक तात्कालिक भुगतान प्रणाली है जिसे नेशनल पेमेंट्स कॉर्पोरेशन ऑफ इंडिया द्वारा विकसित किया गया है, जो एक आरबीआई पहल है।",
+    "chunk_size": 4  # Smaller chunks for lower latency
+}
+
+audio_queue = queue.Queue(maxsize=10)
+stop_flag = False
+samplerate = None  # Will be 8000 Hz (WebSocket processed)
+
+def playback_worker():
+    global stop_flag
+    try:
+        while not stop_flag or not audio_queue.empty():
+            try:
+                audio_data = audio_queue.get(timeout=0.1)
+                sd.play(audio_data, samplerate=samplerate, blocking=True)
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"❌ Playback error: {e}")
+                break
+    except Exception as e:
+        print(f"❌ Playback worker error: {e}")
+
+async def websocket_receiver(websocket):
+    global samplerate, stop_flag
+    
+    try:
+        # Send request to server
+        await websocket.send(json.dumps(REQUEST))
+        print("📡 Request sent to WebSocket server")
+
+        chunk_idx = 0
+        first_chunk = True
+        start_time = time.time()
+        total_audio_duration = 0
+        
+        # Listen for messages from server
+        async for message in websocket:
+            try:
+                data = json.loads(message)
+                
+                if data["type"] == "config":
+                    samplerate = data["sample_rate"]
+                    print(f"🎛 Server samplerate: {samplerate} Hz (WebSocket processed)")
+                    print(f"📋 Server message: {data['message']}")
+                
+                elif data["type"] == "audio_chunk":
+                    # Decode base64 audio data
+                    audio_bytes = base64.b64decode(data["audio_data"])
+                    pcm_array = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32767.0
+                    
+                    audio_duration = len(pcm_array) / samplerate
+                    total_audio_duration += audio_duration
+                    
+                    # Add to playback queue
+                    try:
+                        audio_queue.put(pcm_array, timeout=5.0)
+                    except queue.Full:
+                        print("⚠️ Audio queue full, dropping chunk")
+                        continue
+
+                    chunk_idx += 1
+                    if first_chunk:
+                        first_chunk = False
+                        latency = time.time() - start_time
+                        print(f"⏱ Time to first audio: {latency:.2f}s")
+                    
+                    print(f"⬇️ Chunk {data['chunk_id']}/{data['total_chunks']}: {data['bytes_count']} bytes, {audio_duration:.2f}s audio")
+
+                elif data["type"] == "stream_end":
+                    print("📡 End of stream signal received")
+                    print(f"📋 Server message: {data['message']}")
+                    print(f"📊 Total chunks received: {data['total_chunks']}")
+                    break
+                
+                elif data["type"] == "error":
+                    print(f"❌ Server error: {data['message']}")
+                    break
+                
+                else:
+                    print(f"⚠️ Unknown message type: {data['type']}")
+
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON decode error: {e}")
+                break
+            except Exception as e:
+                print(f"❌ Message processing error: {e}")
+                continue
+
+        print(f"📊 Total audio duration: {total_audio_duration:.2f}s")
+
+    except websockets.exceptions.ConnectionClosed:
+        print("🔌 WebSocket connection closed")
+    except Exception as e:
+        print(f"❌ WebSocket receiver error: {e}")
+    finally:
+        stop_flag = True
+
+def run_websocket_client():
+    """Run the WebSocket client in a separate thread"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    async def client_main():
+        uri = f"ws://{SERVER_IP}:{SERVER_PORT}"
+        try:
+            async with websockets.connect(
+                uri,
+                ping_interval=20,
+                ping_timeout=10,
+                close_timeout=10,
+                proxy=None
+            ) as websocket:
+                print(f"✅ Connected to WebSocket server: {uri}")
+                await websocket_receiver(websocket)
+        except Exception as e:
+            print(f"❌ WebSocket connection error: {e}")
+    
+    try:
+        loop.run_until_complete(client_main())
+    finally:
+        loop.close()
+
+def main():
+    global samplerate, stop_flag
+    
+    print(f"🔌 Connecting to WebSocket server: ws://{SERVER_IP}:{SERVER_PORT}")
+    
+    try:
+        # Start WebSocket client in a separate thread
+        websocket_thread = threading.Thread(target=run_websocket_client, daemon=True)
+        websocket_thread.start()
+
+        # Wait for samplerate to be received
+        print("⏳ Waiting for server configuration...")
+        while samplerate is None and not stop_flag:
+            time.sleep(0.01)
+
+        if stop_flag:
+            print("❌ Failed to get samplerate from server")
+            return
+
+        print(f"🎵 Starting playback at {samplerate} Hz (WebSocket processed)")
+
+        # Start playback worker
+        play_thread = threading.Thread(target=playback_worker, daemon=True)
+        play_thread.start()
+
+        # Wait for WebSocket thread to finish
+        websocket_thread.join()
+        
+        # Wait for audio queue to empty
+        print("⏳ Waiting for audio playback to finish...")
+        while not audio_queue.empty():
+            time.sleep(0.1)
+        
+        stop_flag = True
+        play_thread.join(timeout=2.0)
+        
+        print("🏁 Streaming finished.")
+        
+    except KeyboardInterrupt:
+        print("🛑 Interrupted by user")
+        stop_flag = True
+    except Exception as e:
+        print(f"❌ Main error: {e}")
+
+if __name__ == "__main__":
+    main()
